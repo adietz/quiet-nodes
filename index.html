@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quiet Nodes — A Web Novel (2085)</title>
+<title>Quiet Nodes — Narrated Web Novel (2085)</title>
 <style>
   :root {
     --bg: #0e0e0e;
@@ -49,11 +49,41 @@
     font-size: 0.85rem;
     letter-spacing: 0.05em;
   }
-  nav a:hover { color: var(--accent); }
+  nav a:hover, nav a.active { color: var(--accent); }
+  .controls {
+    position: sticky;
+    bottom: 0;
+    background: rgba(20,20,20,0.95);
+    backdrop-filter: blur(8px);
+    padding: 0.8rem;
+    text-align: center;
+    border-top: 1px solid #333;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .controls button, .controls select {
+    background: #222;
+    color: var(--text);
+    border: 1px solid #444;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .controls button:hover { background: #333; }
+  .controls button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .chapter {
     max-width: 800px;
     margin: 0 auto;
     padding: 3rem 1.5rem;
+    opacity: 0.35;
+    transition: opacity 0.4s ease;
+  }
+  .chapter.active {
+    opacity: 1;
   }
   .chapter h2 {
     font-size: 1.6rem;
@@ -83,7 +113,7 @@
   p { margin: 1.2rem 0; }
   footer {
     text-align: center;
-    padding: 3rem 1rem;
+    padding: 3rem 1rem 6rem;
     color: #666;
     font-size: 0.8rem;
   }
@@ -93,20 +123,20 @@
 <header>
   <img src="imagine_images/nBr8A.jpg" alt="Quiet Nodes Cover">
   <h1>QUIET NODES</h1>
-  <div class="subtitle">A WEB NOVEL · 2085</div>
+  <div class="subtitle">NARRATED WEB NOVEL · 2085</div>
 </header>
 
-<nav>
-  <a href="#cascade">The Cascade</a>
-  <a href="#maya">Maya</a>
-  <a href="#keepers">The Keepers</a>
-  <a href="#fallout">Fallout</a>
-  <a href="#cache">River Cache</a>
-  <a href="#currency">Currency</a>
-  <a href="#present">2085</a>
+<nav id="nav">
+  <a href="#cascade" data-idx="0">The Cascade</a>
+  <a href="#maya" data-idx="1">Maya</a>
+  <a href="#keepers" data-idx="2">The Keepers</a>
+  <a href="#fallout" data-idx="3">Fallout</a>
+  <a href="#cache" data-idx="4">River Cache</a>
+  <a href="#currency" data-idx="5">Currency</a>
+  <a href="#present" data-idx="6">2085</a>
 </nav>
 
-<section class="chapter" id="cascade">
+<section class="chapter" id="cascade" data-idx="0">
   <h2>The Cascade</h2>
   <div class="panel">
     <img src="imagine_images/9hnUj.jpg" alt="Status boards going dark">
@@ -120,7 +150,7 @@
   </div>
 </section>
 
-<section class="chapter" id="maya">
+<section class="chapter" id="maya" data-idx="1">
   <h2>Maya’s Role</h2>
   <div class="panel">
     <img src="imagine_images/v4079.jpg" alt="Maya at the console">
@@ -131,7 +161,7 @@
   <p>She did not cause the Cascade. She was one of the last people who still had a clear view of how it was being finished, and she could not stop it.</p>
 </section>
 
-<section class="chapter" id="keepers">
+<section class="chapter" id="keepers" data-idx="2">
   <h2>The Silence Keepers</h2>
   <div class="panel">
     <img src="imagine_images/KNVRr.jpg" alt="Origins of the Keepers">
@@ -150,7 +180,7 @@
   </div>
 </section>
 
-<section class="chapter" id="fallout">
+<section class="chapter" id="fallout" data-idx="3">
   <h2>Fallout</h2>
   <div class="panel">
     <img src="imagine_images/jFgBD.jpg" alt="After the fall">
@@ -168,7 +198,7 @@
   </div>
 </section>
 
-<section class="chapter" id="cache">
+<section class="chapter" id="cache" data-idx="4">
   <h2>River Cache</h2>
   <div class="panel">
     <img src="imagine_images/dn1qF.jpg" alt="Approaching the cache">
@@ -186,7 +216,7 @@
   </div>
 </section>
 
-<section class="chapter" id="currency">
+<section class="chapter" id="currency" data-idx="5">
   <h2>The New Currency</h2>
   <div class="panel">
     <img src="imagine_images/AGHoe.jpg" alt="Trading post">
@@ -196,7 +226,7 @@
   <p>Maya’s drive and the copies she pulled from River Cache are not currency in the open markets—they are too dangerous to flash—but the seed data and regional maps inside them are the kind of value settlements will quietly trade for.</p>
 </section>
 
-<section class="chapter" id="present">
+<section class="chapter" id="present" data-idx="6">
   <h2>2085</h2>
   <div class="panel">
     <img src="imagine_images/qmEhO.jpg" alt="Node online">
@@ -212,8 +242,103 @@
 </section>
 
 <footer>
-  Quiet Nodes · A Web Novel · 2085<br>
+  Quiet Nodes · A Narrated Web Novel · 2085<br>
   Built from scavenged parts and stubborn memory.
 </footer>
+
+<div class="controls">
+  <button id="prev">← Prev</button>
+  <button id="play" class="primary">▶ Play / Narrate</button>
+  <button id="next">Next →</button>
+  <select id="rate">
+    <option value="0.8">Slower</option>
+    <option value="1" selected>Normal</option>
+    <option value="1.2">Faster</option>
+  </select>
+</div>
+
+<script>
+const chapters = Array.from(document.querySelectorAll('.chapter'));
+const navLinks = Array.from(document.querySelectorAll('#nav a'));
+let current = 0;
+let speaking = false;
+const synth = window.speechSynthesis;
+
+function setActive(idx) {
+  current = Math.max(0, Math.min(chapters.length - 1, idx));
+  chapters.forEach((ch, i) => ch.classList.toggle('active', i === current));
+  navLinks.forEach((a, i) => a.classList.toggle('active', i === current));
+  chapters[current].scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function getText(idx) {
+  const ch = chapters[idx];
+  const title = ch.querySelector('h2')?.textContent || '';
+  const paras = Array.from(ch.querySelectorAll('p')).map(p => p.textContent.trim()).filter(Boolean);
+  const captions = Array.from(ch.querySelectorAll('.caption')).map(c => c.textContent.trim()).filter(Boolean);
+  return [title, ...captions, ...paras].join('. ');
+}
+
+function speakChapter(idx) {
+  if (!synth) return;
+  synth.cancel();
+  const text = getText(idx);
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = parseFloat(document.getElementById('rate').value);
+  utter.onend = () => {
+    speaking = false;
+    if (document.getElementById('play').dataset.auto === 'true' && current < chapters.length - 1) {
+      setTimeout(() => { setActive(current + 1); speakChapter(current); }, 800);
+    }
+  };
+  utter.onerror = () => { speaking = false; };
+  speaking = true;
+  synth.speak(utter);
+}
+
+document.getElementById('play').addEventListener('click', () => {
+  const btn = document.getElementById('play');
+  if (synth.speaking) {
+    synth.cancel();
+    speaking = false;
+    btn.dataset.auto = 'false';
+    btn.textContent = '▶ Play / Narrate';
+  } else {
+    btn.dataset.auto = 'true';
+    btn.textContent = '⏸ Pause';
+    speakChapter(current);
+  }
+});
+
+document.getElementById('next').addEventListener('click', () => {
+  synth.cancel();
+  setActive(current + 1);
+  if (document.getElementById('play').dataset.auto === 'true') speakChapter(current);
+});
+
+document.getElementById('prev').addEventListener('click', () => {
+  synth.cancel();
+  setActive(current - 1);
+  if (document.getElementById('play').dataset.auto === 'true') speakChapter(current);
+});
+
+navLinks.forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    synth.cancel();
+    setActive(parseInt(a.dataset.idx));
+  });
+});
+
+document.getElementById('rate').addEventListener('change', () => {
+  if (synth.speaking) {
+    synth.cancel();
+    speakChapter(current);
+  }
+});
+
+// Start on first chapter
+setActive(0);
+</script>
 </body>
 </html>

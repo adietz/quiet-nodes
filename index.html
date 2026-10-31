@@ -64,7 +64,7 @@
     gap: 0.6rem;
     flex-wrap: wrap;
   }
-  .controls button, .controls select {
+  .controls button {
     background: #222;
     color: var(--text);
     border: 1px solid #444;
@@ -136,7 +136,7 @@
   <a href="#present" data-idx="6">2085</a>
 </nav>
 
-<section class="chapter" id="cascade" data-idx="0">
+<section class="chapter" id="cascade" data-idx="0" data-audio="audio/cascade.mp3">
   <h2>The Cascade</h2>
   <div class="panel">
     <img src="imagine_images/9hnUj.jpg" alt="Status boards going dark">
@@ -150,7 +150,7 @@
   </div>
 </section>
 
-<section class="chapter" id="maya" data-idx="1">
+<section class="chapter" id="maya" data-idx="1" data-audio="audio/maya.mp3">
   <h2>Maya’s Role</h2>
   <div class="panel">
     <img src="imagine_images/v4079.jpg" alt="Maya at the console">
@@ -161,7 +161,7 @@
   <p>She did not cause the Cascade. She was one of the last people who still had a clear view of how it was being finished, and she could not stop it.</p>
 </section>
 
-<section class="chapter" id="keepers" data-idx="2">
+<section class="chapter" id="keepers" data-idx="2" data-audio="audio/keepers.mp3">
   <h2>The Silence Keepers</h2>
   <div class="panel">
     <img src="imagine_images/KNVRr.jpg" alt="Origins of the Keepers">
@@ -180,7 +180,7 @@
   </div>
 </section>
 
-<section class="chapter" id="fallout" data-idx="3">
+<section class="chapter" id="fallout" data-idx="3" data-audio="audio/fallout.mp3">
   <h2>Fallout</h2>
   <div class="panel">
     <img src="imagine_images/jFgBD.jpg" alt="After the fall">
@@ -198,7 +198,7 @@
   </div>
 </section>
 
-<section class="chapter" id="cache" data-idx="4">
+<section class="chapter" id="cache" data-idx="4" data-audio="audio/cache.mp3">
   <h2>River Cache</h2>
   <div class="panel">
     <img src="imagine_images/dn1qF.jpg" alt="Approaching the cache">
@@ -216,7 +216,7 @@
   </div>
 </section>
 
-<section class="chapter" id="currency" data-idx="5">
+<section class="chapter" id="currency" data-idx="5" data-audio="audio/currency.mp3">
   <h2>The New Currency</h2>
   <div class="panel">
     <img src="imagine_images/AGHoe.jpg" alt="Trading post">
@@ -226,7 +226,7 @@
   <p>Maya’s drive and the copies she pulled from River Cache are not currency in the open markets—they are too dangerous to flash—but the seed data and regional maps inside them are the kind of value settlements will quietly trade for.</p>
 </section>
 
-<section class="chapter" id="present" data-idx="6">
+<section class="chapter" id="present" data-idx="6" data-audio="audio/present.mp3">
   <h2>2085</h2>
   <div class="panel">
     <img src="imagine_images/qmEhO.jpg" alt="Node online">
@@ -250,19 +250,14 @@
   <button id="prev">← Prev</button>
   <button id="play" class="primary">▶ Play / Narrate</button>
   <button id="next">Next →</button>
-  <select id="rate">
-    <option value="0.8">Slower</option>
-    <option value="1" selected>Normal</option>
-    <option value="1.2">Faster</option>
-  </select>
 </div>
 
 <script>
 const chapters = Array.from(document.querySelectorAll('.chapter'));
 const navLinks = Array.from(document.querySelectorAll('#nav a'));
 let current = 0;
-let speaking = false;
-const synth = window.speechSynthesis;
+let auto = false;
+let currentAudio = null;
 
 function setActive(idx) {
   current = Math.max(0, Math.min(chapters.length - 1, idx));
@@ -271,73 +266,65 @@ function setActive(idx) {
   chapters[current].scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function getText(idx) {
-  const ch = chapters[idx];
-  const title = ch.querySelector('h2')?.textContent || '';
-  const paras = Array.from(ch.querySelectorAll('p')).map(p => p.textContent.trim()).filter(Boolean);
-  const captions = Array.from(ch.querySelectorAll('.caption')).map(c => c.textContent.trim()).filter(Boolean);
-  return [title, ...captions, ...paras].join('. ');
+function stopAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
 }
 
-function speakChapter(idx) {
-  if (!synth) return;
-  synth.cancel();
-  const text = getText(idx);
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = parseFloat(document.getElementById('rate').value);
-  utter.onend = () => {
-    speaking = false;
-    if (document.getElementById('play').dataset.auto === 'true' && current < chapters.length - 1) {
-      setTimeout(() => { setActive(current + 1); speakChapter(current); }, 800);
+function playChapter(idx) {
+  stopAudio();
+  const src = chapters[idx].dataset.audio;
+  if (!src) return;
+  currentAudio = new Audio(src);
+  currentAudio.onended = () => {
+    if (auto && current < chapters.length - 1) {
+      setTimeout(() => { setActive(current + 1); playChapter(current); }, 600);
+    } else {
+      auto = false;
+      document.getElementById('play').textContent = '▶ Play / Narrate';
     }
   };
-  utter.onerror = () => { speaking = false; };
-  speaking = true;
-  synth.speak(utter);
+  currentAudio.play().catch(err => console.warn(err));
 }
 
 document.getElementById('play').addEventListener('click', () => {
   const btn = document.getElementById('play');
-  if (synth.speaking) {
-    synth.cancel();
-    speaking = false;
-    btn.dataset.auto = 'false';
+  if (currentAudio && !currentAudio.paused) {
+    currentAudio.pause();
+    auto = false;
     btn.textContent = '▶ Play / Narrate';
   } else {
-    btn.dataset.auto = 'true';
+    auto = true;
     btn.textContent = '⏸ Pause';
-    speakChapter(current);
+    playChapter(current);
   }
 });
 
 document.getElementById('next').addEventListener('click', () => {
-  synth.cancel();
+  stopAudio();
   setActive(current + 1);
-  if (document.getElementById('play').dataset.auto === 'true') speakChapter(current);
+  if (auto) playChapter(current);
 });
 
 document.getElementById('prev').addEventListener('click', () => {
-  synth.cancel();
+  stopAudio();
   setActive(current - 1);
-  if (document.getElementById('play').dataset.auto === 'true') speakChapter(current);
+  if (auto) playChapter(current);
 });
 
 navLinks.forEach(a => {
   a.addEventListener('click', e => {
     e.preventDefault();
-    synth.cancel();
+    stopAudio();
+    auto = false;
+    document.getElementById('play').textContent = '▶ Play / Narrate';
     setActive(parseInt(a.dataset.idx));
   });
 });
 
-document.getElementById('rate').addEventListener('change', () => {
-  if (synth.speaking) {
-    synth.cancel();
-    speakChapter(current);
-  }
-});
-
-// Start on first chapter
 setActive(0);
 </script>
 </body>
